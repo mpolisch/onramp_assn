@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
     const { part_number, name, description, cost } = req.body;
 
     if (!name || !part_number) {
-        return res.status(400).json({ error: 'Name is required' });
+        return res.status(400).json({ error: 'Name and part number are required' });
     }
 
     const result = await pool.query(
