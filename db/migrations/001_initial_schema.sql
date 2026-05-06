@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS parts (
   part_number VARCHAR(50) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT,
-  cost NUMERIC(10, 2),
+  cost NUMERIC(10, 2) CHECK (cost >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

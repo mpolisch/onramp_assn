@@ -14,10 +14,15 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    const { name, warehouse_id } = req.body;
+    const { name } = req.body;
+    const warehouse_id = parseInt(req.body.warehouse_id);
 
-    if (!name || !warehouse_id) {
-        return res.status(400).json({ error: 'Name and warehouse ID are required' });
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+
+    if (isNaN(warehouse_id)) {
+        return res.status(400).json({ error: 'warehouse_id must be an integer'});
     }
 
     const warehouse = await pool.query('SELECT id FROM warehouses WHERE id = $1', [warehouse_id]);
