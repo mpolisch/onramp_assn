@@ -19,8 +19,8 @@ router.post('/adjust', async (req, res) => {
     const location_id = parseInt(req.body.location_id);
     const delta = parseInt(req.body.delta);
 
-    if (isNaN(part_id) || isNaN(location_id) || !delta) {
-        return res.status(400).json({ error: 'part_id, location_id, and delta are required and must be integers' });
+    if (isNaN(part_id) || isNaN(location_id) || isNaN(delta) || delta === 0) {
+        return res.status(400).json({ error: 'part_id, location_id, and delta are required and must be integers, delta cannot be 0' });
     }
 
     const client = await pool.connect();
@@ -28,16 +28,41 @@ router.post('/adjust', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        const upsert = await client.query(
-            `INSERT INTO inventory (part_id, location_id, quantity)
-             VALUES ($1, $2, $3)
-             ON CONFLICT (part_id, location_id)
-             DO UPDATE SET quantity = inventory.quantity + $3
-             RETURNING quantity`,
-             [part_id, location_id, delta]
+        // Lock the row to prevent race conditions from concurrent adjustments
+        const existing = await client.query(
+            `SELECT quantity FROM inventory WHERE part_id = $1 AND location_id = $2 FOR UPDATE`,
+
+            [part_id, location_id]
         );
 
-        const quantity_after = upsert.rows[0].quantity;
+        const currentQty = existing.rows.length > 0 ? existing.rows[0].quantity : 0;
+
+        if (currentQty + delta < 0) {
+            const err = new Error(`Adjustment would result in negative quantity (current: ${currentQty}, delta: ${delta})`);
+            err.status = 400;
+            throw err;
+        }
+
+        // Use UPDATE or INSERT separately to avoid passing a negative value through the INSERT path
+        let quantity_after;
+        if (existing.rows.length > 0) {
+            const update = await client.query(
+                `UPDATE inventory SET quantity = quantity + $1
+                 WHERE part_id = $2 AND location_id = $3
+                 RETURNING quantity`,
+                [delta, part_id, location_id]
+            );
+            quantity_after = update.rows[0].quantity;
+        } else {
+            const insert = await client.query(
+                `INSERT INTO inventory (part_id, location_id, quantity)
+                 VALUES ($1, $2, $3)
+                 RETURNING quantity`,
+                [part_id, location_id, delta]
+            );
+            quantity_after = insert.rows[0].quantity;
+        }
+
         const quantity_before = quantity_after - delta;
 
         await client.query(
@@ -66,7 +91,7 @@ router.post('/move', async (req, res) => {
     const quantity = parseInt(req.body.quantity);
 
     if (isNaN(part_id) || isNaN(from_location_id) || isNaN(to_location_id) || isNaN(quantity)) {
-        return res.status(400).json({ error: 'part_id, from_location_id, to_location_id, and quantity must be integers' });
+        return res.status(400).json({ error: 'part_id, from_location_id, to_location_id, and quantity are required and must be integers' });
     }
 
     if (quantity <= 0) {
@@ -83,8 +108,7 @@ router.post('/move', async (req, res) => {
 
         // Check if source has enough quantity
         const source = await client.query(
-            `SELECT quantity FROM inventory
-            WHERE part_id = $1 AND location_id = $2`,
+            `SELECT quantity FROM inventory WHERE part_id = $1 AND location_id = $2 FOR UPDATE`,
             [part_id, from_location_id]
         );
 
