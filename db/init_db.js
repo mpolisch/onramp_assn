@@ -1,12 +1,7 @@
-import { Pool } from 'pg';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const { Pool } =  require('pg');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
