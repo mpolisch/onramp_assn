@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    const { name } = req.body;
+    const name = req.body.name?.toLowerCase().trim();
     const warehouse_id = parseInt(req.body.warehouse_id);
 
     if (!name) {
@@ -22,7 +22,7 @@ router.post('/', async (req, res) => {
     }
 
     if (isNaN(warehouse_id)) {
-        return res.status(400).json({ error: 'warehouse_id must be an integer'});
+        return res.status(400).json({ error: 'warehouse_id is required and must be an integer'});
     }
 
     const warehouse = await pool.query('SELECT id FROM warehouses WHERE id = $1', [warehouse_id]);
@@ -33,7 +33,7 @@ router.post('/', async (req, res) => {
     
     const result = await pool.query(
         `INSERT INTO locations (warehouse_id, name) VALUES ($1, $2) RETURNING *`,
-        [warehouse_id, name.toLowerCase().trim()],
+        [warehouse_id, name],
     );
  
 
