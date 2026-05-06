@@ -6,6 +6,7 @@ const errorHandler = (err, req, res, next) => {
         return res.status(409).json({ error: 'A record with that value already exists'});
     }
 
+    // pg: CHECK constraint error code
     if (err.code === '23514') {
         return res.status(400).json({error: 'A value was set as negative'});
     }
