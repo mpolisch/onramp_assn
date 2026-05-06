@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS parts (
   name VARCHAR(255) NOT NULL,
   description TEXT,
   cost NUMERIC(10, 2),
-  category VARCHAR(100),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -54,7 +53,6 @@ CREATE OR REPLACE VIEW inventory_by_location AS
 SELECT
   p.part_number,
   p.name AS part_name,
-  p.category,
   w.name AS warehouse,
   l.name AS location,
   i.quantity
@@ -69,12 +67,11 @@ CREATE OR REPLACE VIEW inventory_overall AS
 SELECT
   p.part_number,
   p.name AS part_name,
-  p.category,
   p.cost,
   SUM(i.quantity) AS total_quantity
 FROM inventory i
 JOIN parts p ON p.id = i.part_id
-GROUP BY p.id, p.part_number, p.name, p.category, p.cost
+GROUP BY p.id, p.part_number, p.name, p.cost
 ORDER BY p.part_number;
 
 COMMIT;
