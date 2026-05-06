@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
     }
 
     const result = await pool.query(
-        `INSERT INTO parts (part_number, name, description, cost) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        `INSERT INTO parts (part_number, name, description, cost) VALUES ($1, $2, $3, $4) RETURNING *`,
         [part_number.toLowerCase().trim(), name.trim(), description, cost],
     );
     
