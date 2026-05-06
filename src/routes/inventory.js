@@ -31,7 +31,6 @@ router.post('/adjust', async (req, res) => {
         // Lock the row to prevent race conditions from concurrent adjustments
         const existing = await client.query(
             `SELECT quantity FROM inventory WHERE part_id = $1 AND location_id = $2 FOR UPDATE`,
-
             [part_id, location_id]
         );
 
